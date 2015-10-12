@@ -13,30 +13,22 @@ hostname=socket.gethostname()
 # Load config
 stream = open("config.yml", 'r')
 config = yaml.load(stream)
+stream.close()
 
 mosquittoserver=config['mqtt']['broker']
 verbose=config['verbose']
-
-#w1 devices gpio must be set in /boot/config.txt
-
-# Change these to match your hardware
-sensors={
-  17: 'ds18b20',
-  18: 'pir',
-  27: 'pir'
-}
+idle_delay=config['delay']['max_idle_time']
+activity_delay=config['delay']['check_every']
+delay=activity_delay
 
 # initialize
-for gpio in sensors:
-  if 'ds18b20' == sensors[gpio]:
+for sensor in config['sensors']:
+  if 'ds18b20' == config['sensors'][sensor]:
     #TODO: may need a physical pullup
-    GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
   else:
-    GPIO.setup(gpio, GPIO.IN)
+    GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
 
-idle_delay=600
-activity_delay=10
-delay=activity_delay
 state={}
 last_report_time=0
 changed=False
@@ -46,36 +38,36 @@ while True:
   if verbose:
     print "time since prev update", time.time()-last_report_time
   
-  for gpio in sensors:
-    #if verbose:
-    #  print gpio, ' - ', sensors[gpio]
+  for sensor in config['sensors']:
 
-    if 'ds18b20' == sensors[gpio]:
+    if 'ds18b20' == config['sensors'][sensor]['type']:
       for count, sensor in enumerate(W1ThermSensor.get_available_sensors()):
-        input = "%.0f" % sensor.get_temperature()
-        if str(gpio) + sensor.id not in state \
-          or input != state[str(gpio) + sensor.id]:
-          changed=True
-          if verbose:
-            print "Changed", str(gpio) + sensor.id, input
-          state[str(gpio) + sensor.id] = input
-          messages.append({
-            'topic': hostname + sensors[gpio] + str(count),
-            'payload': state[str(gpio) + sensor.id]})
-        if verbose:
-          print("Sensor %s temp %s" % (sensor.id, state[str(gpio) + sensor.id]))
+        input = "%.1f" % sensor.get_temperature()
 
-    else: # 'pir' == sensors[gpio]:
-      input=GPIO.input(gpio)
-      if gpio not in state \
-        or input != state[gpio]:
+        if verbose:
+          print "Sensor %s temp %s." % (sensor.id, input)
+
+        if (sensor.id not in state) or (input != state[sensor.id]):
+          changed=True
+
+          if verbose:
+            print "Changed", sensor.id
+          state[sensor.id] = input
+          messages.append({
+            'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
+            'payload': input})
+
+    else: # 'pir' == config['sensors'][sensor]['gpio']:
+      input=GPIO.input(config['sensors'][sensor]['gpio'])
+      if config['sensors'][sensor]['gpio'] not in state \
+        or input != state[config['sensors'][sensor]['gpio']]:
         changed=True
         if verbose:
-          print "Changed", str(gpio), input
-        state[gpio]=input
+          print "Changed", config['sensors'][sensor]['gpio'], input
+        state[config['sensors'][sensor]['gpio']]=input
         messages.append({
-	  'topic': hostname + sensors[gpio] + str(gpio),
-          'payload': 'motion' if 1 == state[gpio] else 'none' })
+	  'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
+          'payload': 'motion' if 1 == state[config['sensors'][sensor]['gpio']] else 'none' })
 
   # Send all
   if changed or (time.time()-last_report_time) > idle_delay:
@@ -84,9 +76,9 @@ while True:
 
     try:
       publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
+      changed=False
+      last_report_time=time.time()  
     except:
       pass
 
-    changed=False
-    last_report_time=time.time()
   time.sleep(activity_delay)

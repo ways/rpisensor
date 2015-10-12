@@ -4,9 +4,12 @@ mqtt:
   port: 1883
   username:
   password: 
+delay:
+  check_every: 2
+  max_idle_time: 600 
 sensors:
   gpio: 17
     type: ds18b20
-    #w1 devices gpio must be set in /boot/config.txt on rpi
+    #w1 devices gpio must be set in /boot/config.txt on rpi and only need one entry here.
   gpio: 18
     type: pir
