@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import socket                           # hostname
 import paho.mqtt.publish as publish     # mosquitto
 from w1thermsensor import W1ThermSensor # w1 temp
@@ -8,46 +9,78 @@ GPIO.setmode(GPIO.BCM)
 
 verbose=True
 hostname=socket.gethostname()
-mosquittoserver="test.mosquitto.org"
-messages=[]
+mosquittoserver="nas"
 
-#w1 devices, gpio must be set in /boot/config.txt
-#TODO: check if we need a physical pullup
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#w1 devices gpio must be set in /boot/config.txt
 
-#pir devices listed as gpio ports
-pir_gpios=(18, 27)
+# Change these to match your hardware
+sensors={
+  17: 'ds18b20',
+  18: 'pir',
+  27: 'pir'
+}
 
-#send pir
-if verbose:
-  print pir_gpios
-
-for count, pir in enumerate(pir_gpios):
-  if verbose:
-    print 'PIR', pir, 'count', count
-
-  result=None
-  input=None
-  GPIO.setup(pir, GPIO.IN)
-  input=GPIO.input(pir)
-  if 0 == input:
-    result='none'
+# initialize
+for gpio in sensors:
+  if 'ds18b20' == sensors[gpio]:
+    #TODO: may need a physical pullup
+    GPIO.setup(gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
   else:
-    result='motion'
+    GPIO.setup(gpio, GPIO.IN)
 
-  messages.append({
-    'topic': hostname + 'pir' + str(count),
-    'payload': result})
+idle_delay=600
+activity_delay=10
+delay=activity_delay
+state={}
+last_report_time=0
+changed=False
 
-#send temp
-for count, sensor in enumerate(W1ThermSensor.get_available_sensors()):
+while True:
+  messages=[]
   if verbose:
-    print("Sensor %s has temperature %.1f" % (sensor.id, sensor.get_temperature()))
-  messages.append({
-    'topic': hostname + 'temp' + str(count),
-    'payload': "%.1f" % sensor.get_temperature()})
+    print "time since prev update", time.time()-last_report_time
+  
+  for gpio in sensors:
+    #if verbose:
+    #  print gpio, ' - ', sensors[gpio]
 
-# Send all
-publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
+    if 'ds18b20' == sensors[gpio]:
+      for count, sensor in enumerate(W1ThermSensor.get_available_sensors()):
+        input = "%.0f" % sensor.get_temperature()
+        if str(gpio) + sensor.id not in state \
+          or input != state[str(gpio) + sensor.id]:
+          changed=True
+          if verbose:
+            print "Changed", str(gpio) + sensor.id, input
+          state[str(gpio) + sensor.id] = input
+          messages.append({
+            'topic': hostname + sensors[gpio] + str(count),
+            'payload': state[str(gpio) + sensor.id]})
+        if verbose:
+          print("Sensor %s temp %s" % (sensor.id, state[str(gpio) + sensor.id]))
 
-#TODO: rewrite to send more often if important changes
+    else: # 'pir' == sensors[gpio]:
+      input=GPIO.input(gpio)
+      if gpio not in state \
+        or input != state[gpio]:
+        changed=True
+        if verbose:
+          print "Changed", str(gpio), input
+        state[gpio]=input
+        messages.append({
+	  'topic': hostname + sensors[gpio] + str(gpio),
+          'payload': 'motion' if 1 == state[gpio] else 'none' })
+
+  # Send all
+  if changed or (time.time()-last_report_time) > idle_delay:
+    if verbose:
+      print messages
+
+    try:
+      publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
+    except:
+      pass
+
+    changed=False
+    last_report_time=time.time()
+  time.sleep(activity_delay)
