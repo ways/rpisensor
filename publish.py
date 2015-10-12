@@ -2,14 +2,20 @@
 
 import time
 import socket                           # hostname
+import yaml				# config
 import paho.mqtt.publish as publish     # mosquitto
 from w1thermsensor import W1ThermSensor # w1 temp
 import RPi.GPIO as GPIO                 # gpio setup
 GPIO.setmode(GPIO.BCM)
 
-verbose=True
 hostname=socket.gethostname()
-mosquittoserver="nas"
+
+# Load config
+stream = open("config.yml", 'r')
+config = yaml.load(stream)
+
+mosquittoserver=config['mqtt']['broker']
+verbose=config['verbose']
 
 #w1 devices gpio must be set in /boot/config.txt
 

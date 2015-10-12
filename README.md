@@ -5,16 +5,21 @@ Some inspiration from https://github.com/sushack/pi_sensor_mqtt
 
 For use with http://home-assistant.io/, http://openhab.org/ and the like.
 
+Requirements:
+python-yaml
+pip install w1thermsensor
+
 Hardware:
 GPIO connections:
 http://pi.gadgetoid.com/pinout
 
-
-1 3v3, for ds18b202 5V pir01
-34 5v pir02
-56 Gnd
-78
-9 Gnd10
-11 sig ds18b20, WiringPi pin012 sig pir01, bcm18, WiringPi pin 1
-13 	sig pir02, WiringPi pin214 Gnd
-	
+Example setup:
+```
+1 3v3, for ds18b20			2 5V pir01
+3					4 5v pir02
+5					6 Gnd
+7					8
+9 Gnd					10
+11 sig ds18b20, WiringPi pin0		12 sig pir01, bcm18, WiringPi pin 1
+13 	sig pir02, WiringPi pin2	14 Gnd
+```

@@ -1,0 +1,12 @@
+verbose: false
+mqtt:
+  broker: localhost
+  port: 1883
+  username:
+  password: 
+sensors:
+  gpio: 17
+    type: ds18b20
+    #w1 devices gpio must be set in /boot/config.txt on rpi
+  gpio: 18
+    type: pir
