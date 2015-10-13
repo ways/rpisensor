@@ -20,6 +20,7 @@ verbose=config['verbose']
 idle_delay=config['delay']['max_idle_time']
 activity_delay=config['delay']['check_every']
 delay=activity_delay
+act_led=16
 
 # initialize
 if 1 > len(config['sensors']):
@@ -27,7 +28,7 @@ if 1 > len(config['sensors']):
   sys.exit(1)
 
 for sensor in config['sensors']:
-  if 'ds18b20' == config['sensors'][sensor]:
+  if 'ds18b20' == config['sensors'][sensor]['type']:
     if verbose:
       print "Initializing %s with pullup." % config['sensors'][sensor]['type']
     #TODO: may need a physical pullup
@@ -36,6 +37,12 @@ for sensor in config['sensors']:
     if verbose:
       print "Initializing %s." % config['sensors'][sensor]['type']
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
+
+# Set ACT light blink every time we post an update
+if config['actled']:
+  import os
+  os.system("echo none >/sys/class/leds/led0/trigger")
+  GPIO.setup(act_led, GPIO.OUT)
 
 state={}
 last_report_time=0
@@ -83,9 +90,13 @@ while True:
       print messages
 
     try:
+      if config['actled']:
+        GPIO.output(act_led, GPIO.LOW)
       publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
       changed=False
-      last_report_time=time.time()  
+      last_report_time=time.time()
+      if config['actled']:
+        GPIO.output(act_led, GPIO.HIGH)
     except:
       pass
 

@@ -1,10 +1,15 @@
 verbose: True
+# Use the ACT LED of the rpi to blink on updates sent
+actled: True
+
 mqtt:
   broker: test.mosquitto.org
   port: 1883
 delay:
   check_every: 3
   max_idle_time: 600 
+
+# s1, s2 are names never used. GPIO and type are important, see README.
 sensors:
   s1:
     gpio: 17
