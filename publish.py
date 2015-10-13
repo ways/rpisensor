@@ -22,11 +22,19 @@ activity_delay=config['delay']['check_every']
 delay=activity_delay
 
 # initialize
+if 1 > len(config['sensors']):
+  print "No sensors configured!"
+  sys.exit(1)
+
 for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]:
+    if verbose:
+      print "Initializing %s with pullup." % config['sensors'][sensor]['type']
     #TODO: may need a physical pullup
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
   else:
+    if verbose:
+      print "Initializing %s." % config['sensors'][sensor]['type']
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
 
 state={}
