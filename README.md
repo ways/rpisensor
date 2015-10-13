@@ -13,7 +13,7 @@ Hardware:
 See GPIO connections:
 http://pi.gadgetoid.com/pinout
 
-Example setup:
+Example hardware setup:
 ```
 # Physical pin number, function
 # So here we use 3,3 V for the temp sensors and 5 V from two different pins for PIR sensors. We have PIR at 12 and 13. Temp at 11.
