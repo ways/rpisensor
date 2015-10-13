@@ -46,3 +46,8 @@ sensors:
     gpio: 17
     type: ds18b20
 ```
+
+Testing:
+
+Results can be tested with i.e.:
+mosquitto_sub -h test.mosquitto.org -t ${hostname}ds18b20_0

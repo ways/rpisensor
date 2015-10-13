@@ -1,0 +1,3 @@
+
+dtoverlay=w1-gpio,gpiopin=17
+
