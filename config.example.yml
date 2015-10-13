@@ -1,15 +1,14 @@
-verbose: false
+verbose: True
 mqtt:
-  broker: localhost
+  broker: test.mosquitto.org
   port: 1883
-  username:
-  password: 
 delay:
-  check_every: 2
+  check_every: 3
   max_idle_time: 600 
 sensors:
-  gpio: 17
+  s1:
+    gpio: 17
     type: ds18b20
-    #w1 devices gpio must be set in /boot/config.txt on rpi and only need one entry here.
-  gpio: 18
+  s2:
+    gpio: 18
     type: pir

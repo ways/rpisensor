@@ -41,18 +41,18 @@ while True:
   for sensor in config['sensors']:
 
     if 'ds18b20' == config['sensors'][sensor]['type']:
-      for count, sensor in enumerate(W1ThermSensor.get_available_sensors()):
-        input = "%.1f" % sensor.get_temperature()
+      for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
+        input = "%.1f" % w1.get_temperature()
 
         if verbose:
-          print "Sensor %s temp %s." % (sensor.id, input)
+          print "Sensor %s temp %s." % (w1.id, input)
 
-        if (sensor.id not in state) or (input != state[sensor.id]):
+        if (w1.id not in state) or (input != state[w1.id]):
           changed=True
 
           if verbose:
-            print "Changed", sensor.id
-          state[sensor.id] = input
+            print "Changed", w1.id
+          state[w1.id] = input
           messages.append({
             'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
             'payload': input})
