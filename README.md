@@ -51,3 +51,7 @@ Testing:
 
 Results can be tested with i.e.:
 mosquitto_sub -h test.mosquitto.org -t ${hostname}ds18b20_0
+
+
+TODO:
+* Use parasitic power (only need two wires): https://github.com/raspberrypi/firmware/issues/348

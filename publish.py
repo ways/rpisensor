@@ -4,7 +4,6 @@ import time
 import socket                           # hostname
 import yaml				# config
 import paho.mqtt.publish as publish     # mosquitto
-from w1thermsensor import W1ThermSensor # w1 temp
 import RPi.GPIO as GPIO                 # gpio setup
 GPIO.setmode(GPIO.BCM)
 
@@ -22,6 +21,40 @@ activity_delay=config['delay']['check_every']
 delay=activity_delay
 act_led=16
 
+# Functions
+
+def getReading ():
+  x,y,z = XLoBorg.ReadAccelerometer()
+  product = abs(x) + abs(y) + abs(z)
+  #if verbose:
+  #  print "Raw %s %s %s, abs %s, summed %s." % (x, y, z, product, x+y+z)
+  return product
+
+def updateProduct ():
+  # Read several times to get a precise value.
+  reading1 = getReading ()
+  time.sleep (0.2)
+  reading2 = getReading ()
+  time.sleep (0.2)
+  reading3 = getReading ()
+  time.sleep (0.2)
+  reading4 = getReading ()
+  time.sleep (0.2)
+  reading5 = getReading ()
+  time.sleep (0.2)
+  reading6 = getReading ()
+  time.sleep (0.2)
+  reading7 = getReading ()
+  time.sleep (0.2)
+  reading8 = getReading ()
+  time.sleep (0.2)
+  reading9 = getReading ()
+
+  product = ( reading1 + reading2 + reading3 + reading4 + \
+    reading5 + reading6 + reading7 + reading8 + reading9) / 9
+  return product
+
+
 # initialize
 if 1 > len(config['sensors']):
   print "No sensors configured!"
@@ -33,6 +66,15 @@ for sensor in config['sensors']:
       print "Initializing %s with pullup." % config['sensors'][sensor]['type']
     #TODO: may need a physical pullup
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    from w1thermsensor import W1ThermSensor # w1 temp
+
+  if 'xloborg' == config['sensors'][sensor]['type']:
+    if verbose:
+      print "Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type']
+    import XLoBorg
+    XLoBorg.printFunction = XLoBorg.NoPrint
+    XLoBorg.Init()
+
   else:
     if verbose:
       print "Initializing %s." % config['sensors'][sensor]['type']
@@ -71,6 +113,24 @@ while True:
           messages.append({
             'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
             'payload': input})
+
+    if 'xloborg' == config['sensors'][sensor]['type']:
+      product = updateProduct ()
+      input = '%01.0f' % (100*abs(product-previous))
+      
+      #cut-off
+      if 2 > int(input):
+        input=0
+
+      if ('xloborg' not in state) or (input != state['xloborg']):
+        changed=True
+
+        if verbose:
+            print "Changed", w1.id
+          state[w1.id] = input
+        messages.append({
+          'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
+          'payload': input})
 
     else: # 'pir' == config['sensors'][sensor]['gpio']:
       input=GPIO.input(config['sensors'][sensor]['gpio'])

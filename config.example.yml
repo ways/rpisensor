@@ -17,3 +17,6 @@ sensors:
   s2:
     gpio: 18
     type: pir
+  s3:
+    gpio: 0
+    type: xloborg
