@@ -64,7 +64,7 @@ http://pi.gadgetoid.com/pinout
 ## Testing:
 
 Results can be tested with i.e.:
-mosquitto_sub -h test.mosquitto.org -t ${hostname}pir01
+mosquitto_sub -h test.mosquitto.org -t ${hostname_of_your_pi}pir01
 
 
 ## TODO:
