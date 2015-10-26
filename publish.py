@@ -142,7 +142,7 @@ while True:
         state[config['sensors'][sensor]['gpio']]=input
         messages.append({
 	  'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
-          'payload': 'motion' if 1 == state[config['sensors'][sensor]['gpio']] else 'none' })
+          'payload': '1' if 1 == state[config['sensors'][sensor]['gpio']] else '0' })
 
   # Send all
   if changed or (time.time()-last_report_time) > idle_delay:
