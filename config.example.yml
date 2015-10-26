@@ -12,6 +12,10 @@ delay:
 # s1, s2 are names never used. GPIO and type are important, see README.
 # PIR and Reed switches works in the same way.
 sensors:
+  s0:
+    gpio: 0
+    type: dummy
+    delay: 2
   s1:
     gpio: 17
     type: ds18b20a
