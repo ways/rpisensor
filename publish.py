@@ -55,7 +55,8 @@ def updateProduct ():
   return product
 
 
-# initialize
+# Initialize sensor setups
+
 if 1 > len(config['sensors']):
   print "No sensors configured!"
   os.sys.exit(1)
@@ -79,9 +80,12 @@ for sensor in config['sensors']:
       print "Initializing %s." % config['sensors'][sensor]['type']
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
 
-state={}
+state={} # state[gpio]=input
+last_change={} # last_change[gpio]=time
 last_report_time=0
 changed=False
+
+# Main loop
 
 while True:
   messages=[]
@@ -89,68 +93,76 @@ while True:
     print "time since prev update", time.time()-last_report_time
   
   for sensor in config['sensors']:
+    input=None
+    type=config['sensors'][sensor]['type']
+    gpio=config['sensors'][sensor]['gpio']
+    delay=config['sensors'][sensor]['delay']
+    
+    # Set a default value just to fill last_change
+    if gpio not in last_change:
+      last_change[gpio]=99999
 
-    if 'ds18b20' == config['sensors'][sensor]['type']:
+    if 'ds18b20' == type:
       for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
+        if w1.id not in last_change:
+          last_change[w1.id]=99999
         input = "%.1f" % w1.get_temperature()
-
-        if verbose:
-          print "Sensor %s temp %s." % (w1.id, input)
-
         if (w1.id not in state) or (input != state[w1.id]):
           changed=True
-
           if verbose:
-            print "Changed", w1.id
-          state[w1.id] = input
-          messages.append({
-            'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
-            'payload': input})
+            print "Changed sensor %s, %s." % (w1.id, input)
+          if (time.time()-last_change[w1.id] > delay):
+            state[w1.id] = input
+            last_change[w1.id] = time.time()
+            messages.append({
+              'topic': hostname + '/' + type + '_' + str(count),
+              'payload': input})
+          else:
+            changed=False
+            if verbose:
+              print "Not time to send changed %s %s yet. Delay: %s. Remaining: %s." % (w1.id, input, delay, str(time.time()-last_change[w1.id]))
 
-    elif 'xloborg' == config['sensors'][sensor]['type']:
+    elif 'xloborg' == type:
       product = updateProduct ()
       input = '%01.0f' % (100*abs(product-previous))
       
-      #cut-off
+      #HACK: cut-off
       if 2 > int(input):
         input=0
 
       if ('xloborg' not in state) or (input != state['xloborg']):
         changed=True
 
-        if verbose:
-          print "Changed", w1.id
-          state[w1.id] = input
-        messages.append({
-          'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
-          'payload': input})
-
-    elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
-      input=GPIO.input(config['sensors'][sensor]['gpio'])
-      if config['sensors'][sensor]['gpio'] not in state \
-        or input != state[config['sensors'][sensor]['gpio']]:
+    elif 'pir' == type or 'reed' == type:
+      input=GPIO.input(gpio)
+      if gpio not in state or input != state[gpio]:
         changed=True
-        if verbose:
-          print "Changed", config['sensors'][sensor]['gpio'], input
-        state[config['sensors'][sensor]['gpio']]=input
-        messages.append({
-	  'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
-          'payload': '1' if 1 == state[config['sensors'][sensor]['gpio']] else '0' })
 
-    elif 'dummy' == config['sensors'][sensor]['type']:
+    elif 'dummy' == type:
+      input='dummy test value'
       changed=True
-      if verbose:
-        print "Changed", config['sensors'][sensor]['gpio']
-        messages.append({
-          'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
-          'payload': 'dummy test value' })
 
     else:
-      print "Error: wrong type of sensor in config? <%s>" % config['sensors'][sensor]['type']
+      print "Error: wrong type of sensor in config? <%s>" % type
       os.sys.exit(1)
 
+    # Common for all sensors except ds18b20
+    if changed and 'ds18b20' != type:
+      if (time.time()-last_change[gpio] > delay):
+        if verbose:
+          print "Changed", gpio, input
+        state[gpio] = input
+        last_change[gpio] = time.time()
+        messages.append({
+          'topic': hostname + '/' + type + '_' + str(count),
+          'payload': input})
+      else:
+        changed=False
+        if verbose:
+          print "Not time to send %s, %s yet. Delay: %s. Remaining: %s" % (gpio, input, delay, str(time.time()-last_change[gpio]))
+
   # Send all
-  if changed or (time.time()-last_report_time) > idle_delay:
+  if changed:
     if verbose:
       print messages
 
