@@ -1,8 +1,5 @@
 verbose: True
 
-# Use the ACT LED of the rpi to blink on updates sent
-actled: True
-
 mqtt:
   broker: test.mosquitto.org
   port: 1883
