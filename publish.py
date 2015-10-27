@@ -125,7 +125,7 @@ while True:
         changed=True
 
         if verbose:
-            print "Changed", w1.id
+          print "Changed", w1.id
           state[w1.id] = input
         messages.append({
           'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
