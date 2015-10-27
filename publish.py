@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import time
+import os				# os.sys.exit
 import socket                           # hostname
 import yaml				# config
 import paho.mqtt.publish as publish     # mosquitto
@@ -17,7 +18,7 @@ stream.close()
 mosquittoserver=config['mqtt']['broker']
 verbose=config['verbose']
 idle_delay=config['delay']['max_idle_time']
-activity_delay=config['delay']['check_every']
+activity_delay=1
 delay=activity_delay
 act_led=16
 
@@ -58,7 +59,7 @@ def updateProduct ():
 # initialize
 if 1 > len(config['sensors']):
   print "No sensors configured!"
-  sys.exit(1)
+  os.sys.exit(1)
 
 for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]['type']:
@@ -113,7 +114,7 @@ while True:
             'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
             'payload': input})
 
-    if 'xloborg' == config['sensors'][sensor]['type']:
+    elif 'xloborg' == config['sensors'][sensor]['type']:
       product = updateProduct ()
       input = '%01.0f' % (100*abs(product-previous))
       
@@ -131,7 +132,7 @@ while True:
           'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
           'payload': input})
 
-    if 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
+    elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
       input=GPIO.input(config['sensors'][sensor]['gpio'])
       if config['sensors'][sensor]['gpio'] not in state \
         or input != state[config['sensors'][sensor]['gpio']]:
@@ -143,7 +144,7 @@ while True:
 	  'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
           'payload': '1' if 1 == state[config['sensors'][sensor]['gpio']] else '0' })
 
-    if 'dummy' == config['sensors'][sensor]['type']:
+    elif 'dummy' == config['sensors'][sensor]['type']:
       changed=True
       if verbose:
         print "Changed", config['sensors'][sensor]['gpio']
@@ -152,8 +153,8 @@ while True:
           'payload': 'dummy test value' })
 
     else:
-      print "Error: wrong type of sensor in config?"
-      sys.exit(1)
+      print "Error: wrong type of sensor in config? <%s>" % config['sensors'][sensor]['type']
+      os.sys.exit(1)
 
   # Send all
   if changed or (time.time()-last_report_time) > idle_delay:
