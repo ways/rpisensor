@@ -64,7 +64,6 @@ for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]['type']:
     if verbose:
       print "Initializing %s with pullup." % config['sensors'][sensor]['type']
-    #TODO: may need a physical pullup
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
     from w1thermsensor import W1ThermSensor # w1 temp
 
@@ -75,7 +74,7 @@ for sensor in config['sensors']:
     XLoBorg.printFunction = XLoBorg.NoPrint
     XLoBorg.Init()
 
-  else:
+  if 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
     if verbose:
       print "Initializing %s." % config['sensors'][sensor]['type']
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
@@ -132,7 +131,7 @@ while True:
           'topic': hostname + config['sensors'][sensor]['type'] + '_' + str(count),
           'payload': input})
 
-    else: # 'pir' == config['sensors'][sensor]['gpio']:
+    if 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
       input=GPIO.input(config['sensors'][sensor]['gpio'])
       if config['sensors'][sensor]['gpio'] not in state \
         or input != state[config['sensors'][sensor]['gpio']]:
@@ -143,6 +142,18 @@ while True:
         messages.append({
 	  'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
           'payload': '1' if 1 == state[config['sensors'][sensor]['gpio']] else '0' })
+
+    if 'dummy' == config['sensors'][sensor]['type']:
+      changed=True
+      if verbose:
+        print "Changed", config['sensors'][sensor]['gpio']
+        messages.append({
+          'topic': hostname + config['sensors'][sensor]['type'] + str(config['sensors'][sensor]['gpio']),
+          'payload': 'dummy test value' })
+
+    else:
+      print "Error: wrong type of sensor in config?"
+      sys.exit(1)
 
   # Send all
   if changed or (time.time()-last_report_time) > idle_delay:
