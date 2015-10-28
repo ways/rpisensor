@@ -165,7 +165,7 @@ while True:
         state[gpio] = input
         last_change[gpio] = time.time()
         messages.append({
-          'topic': hostname + '/' + type,
+          'topic': hostname + '/' + type + gpio,
           'payload': input})
       else:
         changed=False
