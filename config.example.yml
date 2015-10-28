@@ -15,7 +15,7 @@ sensors:
     delay: 2
   s1:
     gpio: 17
-    type: ds18b20a
+    type: ds18b20
     delay: 60
   s2:
     gpio: 18
