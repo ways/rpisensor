@@ -90,7 +90,7 @@ changed=False
 while True:
   messages=[]
   if verbose:
-    print "time since prev update", time.time()-last_report_time
+    print "time since prev update %.0f" % (time.time()-last_report_time)
   
   for sensor in config['sensors']:
     input=None
@@ -120,7 +120,7 @@ while True:
           else:
             changed=False
             if verbose:
-              print "Not time to send changed %s %s yet. Delay: %s. Remaining: %s." % (w1.id, input, delay, str(time.time()-last_change[w1.id]))
+              print "Not time to send changed %s %s yet. Delay: %s. Remaining: %.0f." % (w1.id, input, delay, str(time.time()-last_change[w1.id]))
 
     elif 'xloborg' == type:
       product = updateProduct ()
@@ -159,7 +159,7 @@ while True:
       else:
         changed=False
         if verbose:
-          print "Not time to send %s, %s yet. Delay: %s. Remaining: %s" % (gpio, input, delay, str(time.time()-last_change[gpio]))
+          print "Not time to send %s, %s yet. Delay: %s. Remaining: %.0f" % (gpio, input, delay, str(time.time()-last_change[gpio]))
 
   # Send all
   if changed:
