@@ -1,6 +1,6 @@
 # rpisensors to mqtt
 
-Read sensors and publish via mqtt with the least amount of config
+Read sensors connected to a Raspberry Pi (http://raspberrypi.org/), and publish the results via the Mosquito protocol (http://mosquitto.org/) with the least amount of config.
 
 For use with http://home-assistant.io/, http://openhab.org/ and the like.
 
@@ -14,34 +14,8 @@ sudo pip install w1thermsensor paho-mqtt
 
 ## Types of sensors:
 
-### ds18b20 temperature sensor
+See README.sensors.md
 
-I.e. connect + to GPIO pin 1, - to GPIO pin 6, data to GPIO pin 12 (see example setup). No pull-up restistor required. 
-Note that the ds18b20 / w1 needs special care. All sensors are connected to the same pin. This must be in your /boot/config.txt:
-
-```
-dtoverlay=w1-gpio,gpiopin=17
-```
-
-And in config.yml below "sensors:"
-
-```
-  s1:
-    gpio: 17
-    type: ds18b20
-```
-
-### Passive InfraRed or reed switch
-
-I.e. connect + to GPIO pin 2, - to GPIO pin 6, data to GPIO pin 12.
-
-And in config.yml below "sensors:"
-
-```
-  s1:
-    gpio: 12
-    type: pir
-```
 
 ## Example hardware setup:
 
