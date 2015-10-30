@@ -33,3 +33,17 @@ And in config.yml below "sensors:"
     type: pir
 ```
 
+### XLoBorg Accelerometer
+
+* Activate i2c via raspi-config / dietpi-config
+* Fetch library from https://www.piborg.org/xloborg/install into same folder as rpisensors.
+* The library uses i2c, witch runs via BCM ports 2 and 3, so the gpio value in our config doesn't matter much. Just don't crash with one of the other sensors you're using.
+
+In config.yml below "sensors:"
+
+```
+  s1:
+    gpio: 2
+    type: pir
+```
+
