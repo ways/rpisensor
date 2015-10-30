@@ -10,7 +10,7 @@ delay:
 # PIR and Reed switches works in the same way.
 sensors:
   s0:
-    gpio: 0
+          gpio: -1 # Negative to not crash with actual GPIO sensors
     type: dummy
     delay: 2
   s1:
@@ -24,7 +24,7 @@ sensors:
   s3:
     gpio: 19
     type: reed
-  s4: # GPIO is hardcoded in xloborg lib to ??
-    gpio: None
+  s4:
+    gpio: 0 # Not used, but should be unique
     type: xloborg
     delay: 30

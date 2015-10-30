@@ -135,23 +135,19 @@ while True:
               print "Not time to send changed %s %s yet. Delay: %s. Since last update: %.0f." \
                 % (w1.id, input, delay, (time.time()-last_change[w1.id]))
 
-    elif 'xloborg' == type:
-      product = updateProduct ()
-      input = '%01.0f' % (100*abs(product-previous))
-      
-      #HACK: cut-off
-      if 2 > int(input):
-        input=0
-
-      if ('xloborg' not in state) or (input != state['xloborg']):
-        changed=True
-
     elif 'pir' == type or 'reed' == type:
       input=GPIO.input(gpio)
       if gpio not in state or input != state[gpio]:
         changed=True
         if verbose:
           print "%s changed to %s" % (gpio, input)
+
+    elif 'xloborg' == type:
+      product = updateProduct ()
+      input = '%01.0f' % product
+      
+      if ('xloborg' not in state) or (input != state['xloborg']):
+        changed=True
 
     elif 'dummy' == type:
       input='dummy test value'
@@ -167,18 +163,14 @@ while True:
         state[gpio] = input
         last_change[gpio] = time.time()
         messages.append({
-#          'topic':   hostname + '/' + type + str(gpio),
-#          'payload': input,
-#          'retain':  True})
-          hostname + '/' + type + str(gpio),
-          input,
-          0,
-          True})
+          'topic': (hostname + '/' + type + str(gpio)),
+          'payload': input,
+          'retain': True})
       else:
-        changed=False
         if verbose:
-          print "Not changed, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
-            % (gpio, input, delay, (time.time()-last_change[gpio]))
+            print "Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
+            % (changed, gpio, input, delay, (time.time()-last_change[gpio]))
+        changed=False
     
   # Send all
   if changed:
@@ -189,7 +181,8 @@ while True:
       publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
       changed=False
       last_report_time=time.time()
-    except:
+    except Exception as err:
+      print "*** Error sending message *** %s." % err
       pass
 
   time.sleep(activity_delay)
