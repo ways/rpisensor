@@ -114,7 +114,10 @@ while True:
       for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
         if w1.id not in last_change:
           last_change[w1.id]=99999
-        input = "%.1f" % w1.get_temperature()
+        try:
+          input = "%.1f" % w1.get_temperature()
+        except:
+          pass
         if (w1.id not in state) or (input != state[w1.id]):
           changed=True
           if verbose:
@@ -124,7 +127,8 @@ while True:
             last_change[w1.id] = time.time()
             messages.append({
               'topic': hostname + '/' + type + '_' + str(count),
-              'payload': input})
+              'payload': input,
+              'retain': True})
           else:
             changed=False
             if verbose:
@@ -146,31 +150,34 @@ while True:
       input=GPIO.input(gpio)
       if gpio not in state or input != state[gpio]:
         changed=True
+        if verbose:
+          print "%s changed to %s" % (gpio, input)
 
     elif 'dummy' == type:
       input='dummy test value'
       changed=True
 
-#    else:
-#      print "Error: wrong type of sensor in config? <%s>" % type
-#      os.sys.exit(1)
-
     # Common for all sensors except ds18b20
     if 'ds18b20' != type:
       # Check if changed and above delay for the sensor, or above max_idle_time
-      if changed and (time.time()-last_change[gpio] > delay) \
+      if (changed and (time.time()-last_change[gpio] > delay) ) \
         or (time.time()-last_change[gpio] > max_idle_time):
         if verbose:
           print "Changed (or max_idle_time hit) for %s: %s" % (gpio, input)
         state[gpio] = input
         last_change[gpio] = time.time()
         messages.append({
-          'topic': hostname + '/' + type + str(gpio),
-          'payload': input})
+#          'topic':   hostname + '/' + type + str(gpio),
+#          'payload': input,
+#          'retain':  True})
+          hostname + '/' + type + str(gpio),
+          input,
+          0,
+          True})
       else:
         changed=False
         if verbose:
-          print "Not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
+          print "Not changed, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
             % (gpio, input, delay, (time.time()-last_change[gpio]))
     
   # Send all
