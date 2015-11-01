@@ -17,6 +17,7 @@ sensors:
     gpio: 17
     type: ds18b20
     delay: 60
+    offset: 0 # Adjust temperature if needed
   s2:
     gpio: 18
     type: pir
@@ -28,3 +29,4 @@ sensors:
     gpio: 0 # Not used, but should be unique
     type: xloborg
     delay: 30
+    offset: -1 # Too zero out the base level

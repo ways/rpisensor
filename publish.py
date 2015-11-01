@@ -105,7 +105,11 @@ while True:
     type=config['sensors'][sensor]['type']
     gpio=config['sensors'][sensor]['gpio']
     delay=config['sensors'][sensor]['delay']
-    
+    try:
+      offset=config['sensors'][sensor]['offset']
+    except KeyError:
+      offset=0
+
     # Set a default value just to fill last_change
     if gpio not in last_change:
       last_change[gpio]=99999
@@ -115,7 +119,7 @@ while True:
         if w1.id not in last_change:
           last_change[w1.id]=99999
         try:
-          input = "%.1f" % w1.get_temperature()
+          input = int("%.1f" % w1.get_temperature()) + offset
         except:
           pass
         if (w1.id not in state) or (input != state[w1.id]):
@@ -144,7 +148,7 @@ while True:
 
     elif 'xloborg' == type:
       product = updateProduct ()
-      input = '%01.0f' % product
+      input = int('%01.0f' % product) + offset
       
       if ('xloborg' not in state) or (input != state['xloborg']):
         changed=True
