@@ -118,10 +118,10 @@ while True:
       for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
         if w1.id not in last_change:
           last_change[w1.id]=99999
-        try:
-          input = int("%.1f" % w1.get_temperature()) + offset
-        except:
-          pass
+        #try:
+        input = float("%.1f" % w1.get_temperature()) + offset
+        #except:
+        #  pass
         if (w1.id not in state) or (input != state[w1.id]):
           changed=True
           if verbose:
