@@ -140,7 +140,11 @@ while True:
                 % (w1.id, input, delay, (time.time()-last_change[w1.id]))
 
     elif 'pir' == type or 'reed' == type:
-      input=GPIO.input(gpio)
+      if 'pir' == type:
+	input=GPIO.input(gpio)
+      else: # Reed
+        input='closed' if 0 == GPIO.input(gpio) else 'open'
+
       if gpio not in state or input != state[gpio]:
         changed=True
         if verbose:
@@ -168,7 +172,7 @@ while True:
         last_change[gpio] = time.time()
         messages.append({
           'topic': (hostname + '/' + type + str(gpio)),
-          'payload': float(input),
+          'payload': input,
           'retain': True})
       else:
         if verbose:
