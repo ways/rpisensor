@@ -148,7 +148,7 @@ while True:
 
     elif 'xloborg' == type:
       product = updateProduct ()
-      input = int('%01.0f' % product) + offset
+      input = float( '%01.2f' % (product + offset) )
       
       if ('xloborg' not in state) or (input != state['xloborg']):
         changed=True
@@ -168,7 +168,7 @@ while True:
         last_change[gpio] = time.time()
         messages.append({
           'topic': (hostname + '/' + type + str(gpio)),
-          'payload': input,
+          'payload': float(input),
           'retain': True})
       else:
         if verbose:
