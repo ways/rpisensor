@@ -165,8 +165,7 @@ while True:
 
       if gpio not in state or input != state[gpio]:
         changed=True
-        if verbose:
-          print "%s changed to %s" % (gpio, input)
+        logger.debug("%s changed to %s" % (gpio, input))
 
     elif 'xloborg' == type:
       product = updateProduct ()
@@ -184,8 +183,7 @@ while True:
       # Check if changed and above delay for the sensor, or above max_idle_time
       if (changed and (time.time()-last_change[gpio] > delay) ) \
         or (time.time()-last_change[gpio] > max_idle_time):
-        if verbose:
-          print "Changed (or max_idle_time hit) for %s: %s" % (gpio, input)
+        logger.info("Changed (or max_idle_time hit) for %s: %s" % (gpio, input))
         state[gpio] = input
         last_change[gpio] = time.time()
         messages.append({
@@ -193,15 +191,13 @@ while True:
           'payload': input,
           'retain': True})
       else:
-        if verbose:
-            print "Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
-            % (changed, gpio, input, delay, (time.time()-last_change[gpio]))
+        logger.debug("Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
+            % (changed, gpio, input, delay, (time.time()-last_change[gpio])))
         changed=False
     
   # Send all
   if changed:
-    if verbose:
-      print messages
+    logger.debug(messages)
 
     try:
       publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
