@@ -35,13 +35,14 @@ activity_delay=1
 delay=activity_delay
 
 # Logging
-if config['verbose']:
-  logging.basicConfig(level=logging.DEBUG)
-else:
-  logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 handler = logging.FileHandler('/tmp/rpisensor.log')
-handler.setLevel(logging.INFO)
+logging.basicConfig(level=logging.ERROR)
+if config['verbose']:
+  handler.setLevel(logging.DEBUG)
+else:
+  handler.setLevel(logging.INFO)
+
+logger = logging.getLogger(__name__)
 logger.addHandler(handler)
 
 # Functions
@@ -85,27 +86,26 @@ def updateProduct ():
 if 1 > len(config['sensors']):
   error = 'No sensors configured!'
   logger.error(error)
-  print error
   os.sys.exit(1)
 
 for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]['type']:
-    logger.debug ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
+    logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
     from w1thermsensor import W1ThermSensor # w1 temp
 
   elif 'xloborg' == config['sensors'][sensor]['type']:
-    logger.debug ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
+    logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
     import XLoBorg
     XLoBorg.printFunction = XLoBorg.NoPrint
     XLoBorg.Init()
 
   elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
-    logger.debug ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
+    logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
   
   elif 'dummy' == config['sensors'][sensor]['type']:
-    logger.debug ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
+    logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
 
   else:
     logger.error("Error: wrong type of sensor in config? <%s>" % type)
@@ -208,7 +208,6 @@ while True:
       changed=False
       last_report_time=time.time()
     except Exception as err:
-      print "*** Error sending message *** %s." % err
-      pass
+      logger.error("*** Error sending message *** %s." % err)
 
   time.sleep(activity_delay)
