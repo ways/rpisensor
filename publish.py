@@ -6,16 +6,14 @@ import socket                           # hostname
 try:
   import yaml                             # config
   import paho.mqtt.publish as publish     # mosquitto
-  import logger                           # logging
-except:
-  print "Error importing modules. Please check README for requirements."
-  os.sys.exit(1)
-
-try:
+  import logging                          # logging
   import RPi.GPIO as GPIO                 # gpio setup
   GPIO.setmode(GPIO.BCM)
-except:
-  print "Error importing RPi.GPIO. Please check README for requirements"
+except ImportError as e:
+  print "Error importing modules: %s. Please check README for requirements." % e
+  os.sys.exit(1)
+except RuntimeError as e:
+  print "Error importing modules:", e
 
 
 #Hostname is used in topic
@@ -101,6 +99,9 @@ for sensor in config['sensors']:
   elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
     logger.debug ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
+  
+  elif 'dummy' == config['sensors'][sensor]['type']:
+    logger.debug ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
 
   else:
     logger.error("Error: wrong type of sensor in config? <%s>" % type)
