@@ -34,11 +34,15 @@ max_idle_time=config['delay']['max_idle_time']
 activity_delay=1
 delay=activity_delay
 
+# Logging
 if config['verbose']:
   logging.basicConfig(level=logging.DEBUG)
 else:
   logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+handler = logging.FileHandler('/tmp/rpisensor.log')
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 # Functions
 
