@@ -3,24 +3,44 @@
 import time                             # Time calculations
 import os                               # os.sys.exit
 import socket                           # hostname
-import yaml                             # config
-import paho.mqtt.publish as publish     # mosquitto
-import RPi.GPIO as GPIO                 # gpio setup
-GPIO.setmode(GPIO.BCM)
+try:
+  import yaml                             # config
+  import paho.mqtt.publish as publish     # mosquitto
+  import logger                           # logging
+except:
+  print "Error importing modules. Please check README for requirements."
+  os.sys.exit(1)
+
+try:
+  import RPi.GPIO as GPIO                 # gpio setup
+  GPIO.setmode(GPIO.BCM)
+except:
+  print "Error importing RPi.GPIO. Please check README for requirements"
+
 
 #Hostname is used in topic
 hostname=socket.gethostname()
 
 # Load config
-stream = open("config.yml", 'r')
+try:
+  stream = open("config.yml", 'r')
+except IOError:
+  print "Error opening config file config.yml. Please create one from the example file."
+  os.sys.exit(1)
+
 config = yaml.load(stream)
 stream.close()
 
 mosquittoserver=config['mqtt']['broker']
-verbose=config['verbose']
 max_idle_time=config['delay']['max_idle_time']
 activity_delay=1
 delay=activity_delay
+
+if config['verbose']:
+  logging.basicConfig(level=logging.DEBUG)
+else:
+  logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Functions
 
@@ -61,30 +81,29 @@ def updateProduct ():
 # Initialize sensor setups
 
 if 1 > len(config['sensors']):
-  print "No sensors configured!"
+  error = 'No sensors configured!'
+  logger.error(error)
+  print error
   os.sys.exit(1)
 
 for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]['type']:
-    if verbose:
-      print "Initializing %s with pullup." % config['sensors'][sensor]['type']
+    logger.debug ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
     from w1thermsensor import W1ThermSensor # w1 temp
 
   elif 'xloborg' == config['sensors'][sensor]['type']:
-    if verbose:
-      print "Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type']
+    logger.debug ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
     import XLoBorg
     XLoBorg.printFunction = XLoBorg.NoPrint
     XLoBorg.Init()
 
   elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
-    if verbose:
-      print "Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio'])
+    logger.debug ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
 
   else:
-    print "Error: wrong type of sensor in config? <%s>" % type
+    logger.error("Error: wrong type of sensor in config? <%s>" % type)
     os.sys.exit(1)
 
    
@@ -97,8 +116,7 @@ changed=False
 
 while True:
   messages=[]
-  if verbose:
-    print "time since prev update %.0f" % (time.time()-last_report_time)
+  logger.debug ("time since prev update %.0f" % (time.time()-last_report_time))
   
   for sensor in config['sensors']:
     input=None
@@ -124,8 +142,7 @@ while True:
         #  pass
         if (w1.id not in state) or (input != state[w1.id]):
           changed=True
-          if verbose:
-            print "Changed sensor %s, %s." % (w1.id, input)
+          logger.debug ("Changed sensor %s, %s." % (w1.id, input))
           if (time.time()-last_change[w1.id] > delay):
             state[w1.id] = input
             last_change[w1.id] = time.time()
@@ -135,9 +152,9 @@ while True:
               'retain': True})
           else:
             changed=False
-            if verbose:
-              print "Not time to send changed %s %s yet. Delay: %s. Since last update: %.0f." \
-                % (w1.id, input, delay, (time.time()-last_change[w1.id]))
+            logger.debug (
+              "Not time to send changed %s %s yet. Delay: %s. Since last update: %.0f."
+              % (w1.id, input, delay, (time.time()-last_change[w1.id])))
 
     elif 'pir' == type or 'reed' == type:
       if 'pir' == type:

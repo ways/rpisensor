@@ -10,7 +10,7 @@ delay:
 # PIR and Reed switches works in the same way.
 sensors:
   s0:
-          gpio: -1 # Negative to not crash with actual GPIO sensors
+    gpio: -1 # Negative to not crash with actual GPIO sensors
     type: dummy
     delay: 2
   s1:
