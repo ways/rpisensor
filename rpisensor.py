@@ -35,14 +35,16 @@ activity_delay=1
 delay=activity_delay
 
 # Logging
+logger = logging.getLogger(__name__)
 handler = logging.FileHandler('/tmp/rpisensor.log')
-logging.basicConfig(level=logging.ERROR)
 if config['verbose']:
   handler.setLevel(logging.DEBUG)
+  logging.basicConfig(level=logging.DEBUG)
+  logger.debug("Logger set to DEBUG")
 else:
   handler.setLevel(logging.INFO)
+  logging.basicConfig(level=logging.INFO)
 
-logger = logging.getLogger(__name__)
 logger.addHandler(handler)
 
 # Functions
@@ -154,7 +156,7 @@ while True:
             messages.append({
               'topic': hostname + '/' + type + '_' + str(count),
               'payload': input,
-              'retain': True})
+              'retain': False})
           else:
             changed=False
             logger.debug (
@@ -193,7 +195,7 @@ while True:
         messages.append({
           'topic': (hostname + '/' + type + str(gpio)),
           'payload': input,
-          'retain': True})
+          'retain': False})
       else:
         logger.debug("Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
             % (changed, gpio, input, delay, (time.time()-last_change[gpio])))
