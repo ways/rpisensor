@@ -30,3 +30,7 @@ sensors:
     type: xloborg
     delay: 30
     offset: -1 # Too zero out the base level
+  s5:
+    gpio: 4
+    type: digital
+    reverse: True

@@ -102,7 +102,7 @@ for sensor in config['sensors']:
     XLoBorg.printFunction = XLoBorg.NoPrint
     XLoBorg.Init()
 
-  elif 'pir' == config['sensors'][sensor]['type'] or 'reed' == config['sensors'][sensor]['type']:
+  elif config['sensors'][sensor]['type'] in ['digital', 'pir', 'reed']:
     logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
   
@@ -129,7 +129,14 @@ while True:
     input=None
     type=config['sensors'][sensor]['type']
     gpio=config['sensors'][sensor]['gpio']
-    delay=config['sensors'][sensor]['delay']
+    try:
+      delay=config['sensors'][sensor]['delay']
+    except KeyError:
+      delay=1
+    try:
+      reverse=config['sensors'][sensor]['reverse']
+    except KeyError:
+      reverse=False
     try:
       offset=config['sensors'][sensor]['offset']
     except KeyError:
@@ -163,9 +170,15 @@ while True:
               "Not time to send changed %s %s yet. Delay: %s. Since last update: %.0f."
               % (w1.id, input, delay, (time.time()-last_change[w1.id])))
 
-    elif 'pir' == type or 'reed' == type:
-      if 'pir' == type:
-	input=GPIO.input(gpio)
+    elif type in ['digital', 'pir', 'reed']:
+      if 'digital' == type:
+        if not reverse:
+	  input='1' if 1 == GPIO.input(gpio) else '0'
+        else:
+	  input='0' if 1 == GPIO.input(gpio) else '0'
+
+      elif 'pir' == type:
+        input='none' if 0 == GPIO.input(gpio) else 'motion'
       else: # Reed
         input='closed' if 0 == GPIO.input(gpio) else 'open'
 
