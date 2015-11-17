@@ -33,4 +33,4 @@ sensors:
   s5:
     gpio: 4
     type: digital
-    reverse: True
+    invert: True

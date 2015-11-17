@@ -134,9 +134,10 @@ while True:
     except KeyError:
       delay=1
     try:
-      reverse=config['sensors'][sensor]['reverse']
+      invert=config['sensors'][sensor]['invert']
+      logger.debug("Sensor %s is inverted." % config['sensors'][sensor]['gpio'])
     except KeyError:
-      reverse=False
+      invert=False
     try:
       offset=config['sensors'][sensor]['offset']
     except KeyError:
@@ -162,8 +163,7 @@ while True:
             last_change[w1.id] = time.time()
             messages.append({
               'topic': hostname + '/' + type + '_' + str(count),
-              'payload': input,
-              'retain': False})
+              'payload': input})
           else:
             changed=False
             logger.debug (
@@ -172,10 +172,10 @@ while True:
 
     elif type in ['digital', 'pir', 'reed']:
       if 'digital' == type:
-        if not reverse:
+        if not invert:
 	  input='1' if 1 == GPIO.input(gpio) else '0'
         else:
-	  input='0' if 1 == GPIO.input(gpio) else '0'
+	  input='0' if 1 == GPIO.input(gpio) else '1'
 
       elif 'pir' == type:
         input='none' if 0 == GPIO.input(gpio) else 'motion'
@@ -207,8 +207,7 @@ while True:
         last_change[gpio] = time.time()
         messages.append({
           'topic': (hostname + '/' + type + str(gpio)),
-          'payload': input,
-          'retain': False})
+          'payload': input})
       else:
         logger.debug("Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
             % (changed, gpio, input, delay, (time.time()-last_change[gpio])))
