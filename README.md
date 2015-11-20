@@ -43,4 +43,4 @@ mosquitto_sub -h test.mosquitto.org -t ${hostname_of_your_pi}pir01
 
 ## TODO:
 * Use parasitic power (only need two wires): https://github.com/raspberrypi/firmware/issues/348
-
+* Always discard first sensor read. Seems lots of sensors give bad data at first read.
