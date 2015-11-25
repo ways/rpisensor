@@ -118,6 +118,7 @@ state={}           # Keep track of states of sensors: state[gpio]=input
 last_change={}     # When a certain sensor change was last sent: last_change[gpio]=time
 last_report_time=0 # When any change was sent
 changed=False
+first=True         # Skip first readings
 
 # Main loop
 
@@ -212,7 +213,13 @@ while True:
         logger.debug("Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
             % (changed, gpio, input, delay, (time.time()-last_change[gpio])))
         changed=False
-    
+  
+  # Skip first readings
+  if first:
+    first=False
+    time.sleep(activity_delay)
+    continue
+  
   # Send all
   if changed:
     logger.debug(messages)
