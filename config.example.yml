@@ -10,8 +10,8 @@ delay:
 # PIR and Reed switches works in the same way.
 sensors:
   s0:
-    gpio: -1 # Negative to not crash with actual GPIO sensors
-    type: dummy
+    gpio: -1    # Negative to not crash with actual GPIO sensors
+    type: dummy # Will fetch rpi cpu temp
     delay: 2
   s1:
     gpio: 17

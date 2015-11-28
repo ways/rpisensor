@@ -107,7 +107,8 @@ for sensor in config['sensors']:
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
   
   elif 'dummy' == config['sensors'][sensor]['type']:
-    logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
+    #logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
+    pass
 
   else:
     logger.error("Error: wrong type of sensor in config? <%s>" % type)
@@ -196,7 +197,7 @@ while True:
         changed=True
 
     elif 'dummy' == type:
-      input='dummy test value'
+      input=int(open('/sys/class/thermal/thermal_zone0/temp').read()) / 1e3
       changed=True
 
     # Common for all sensors except ds18b20
