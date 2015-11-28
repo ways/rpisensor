@@ -136,7 +136,7 @@ while True:
       delay=1
     try:
       invert=config['sensors'][sensor]['invert']
-      logger.debug("Sensor %s is inverted." % config['sensors'][sensor]['gpio'])
+      #logger.debug("Sensor %s is inverted." % config['sensors'][sensor]['gpio'])
     except KeyError:
       invert=False
     try:
@@ -154,7 +154,8 @@ while True:
           last_change[w1.id]=99999
         try:
           input = float("%.1f" % w1.get_temperature()) + offset
-        except w1thermsensor.core.SensorNotReadyError:
+        except W1ThermSensor.SensorNotReadyError:
+        #except w1thermsensor.core.SensorNotReadyError:
           continue
         if (w1.id not in state) or (input != state[w1.id]):
           changed=True
@@ -217,6 +218,10 @@ while True:
   # Skip first readings
   if first:
     first=False
+    state.clear()
+    last_change.clear()
+    last_report_time=0
+    logger.debug('First!')
     time.sleep(activity_delay)
     continue
   
