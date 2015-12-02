@@ -15,6 +15,7 @@ except ImportError as e:
 except RuntimeError as e:
   print "Error importing modules:", e
 
+sys_version=0.5
 
 #Hostname is used in topic
 hostname=socket.gethostname()
@@ -119,7 +120,6 @@ state={}           # Keep track of states of sensors: state[gpio]=input
 last_change={}     # When a certain sensor change was last sent: last_change[gpio]=time
 last_report_time=0 # When any change was sent
 changed=False
-first=True         # Skip first readings
 
 # Main loop
 
@@ -155,10 +155,17 @@ while True:
           last_change[w1.id]=99999
         try:
           input = float("%.1f" % w1.get_temperature()) + offset
-        except W1ThermSensor.SensorNotReadyError:
+        except W1ThermSensorError:
         #except w1thermsensor.core.SensorNotReadyError:
+          logger.error("Unable to read %s sensor on gpio %." % (type, gpio))
           continue
-        if (w1.id not in state) or (input != state[w1.id]):
+
+        # Store, but don't send first reading
+        if (w1.id not in state):
+          state[w1.id] = input
+          continue
+
+        if (input != state[w1.id]):
           changed=True
           logger.debug ("Changed sensor %s, %s." % (w1.id, input))
           if (time.time()-last_change[w1.id] > delay):
@@ -215,16 +222,6 @@ while True:
         logger.debug("Changed: %s, or not time to send %s: %s yet. Delay: %s. Since last update: %.0f." \
             % (changed, gpio, input, delay, (time.time()-last_change[gpio])))
         changed=False
-  
-  # Skip first readings
-  if first:
-    first=False
-    state.clear()
-    last_change.clear()
-    last_report_time=0
-    logger.debug('First!')
-    time.sleep(activity_delay)
-    continue
   
   # Send all
   if changed:
