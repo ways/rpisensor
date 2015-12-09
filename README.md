@@ -10,7 +10,7 @@ For use with http://home-assistant.io/, http://openhab.org/ and the like.
 Install any debian based distro (raspbian, dietpi) and run:
 
 sudo apt-get install python-pip python-yaml python-rpi.gpio
-sudo pip install w1thermsensor paho-mqtt logger
+sudo pip3 install w1thermsensor paho-mqtt logger
 
 ## Types of sensors:
 

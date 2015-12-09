@@ -10,10 +10,10 @@ try:
   import RPi.GPIO as GPIO                 # gpio setup
   GPIO.setmode(GPIO.BCM)
 except ImportError as e:
-  print "Error importing modules: %s. Please check README for requirements." % e
+  print("Error importing modules: %s. Please check README for requirements." % e)
   #os.sys.exit(1)
 except RuntimeError as e:
-  print "Error importing modules:", e
+  print("Error importing modules:", e)
 
 sys_version=1.1
 
@@ -24,7 +24,7 @@ hostname=socket.gethostname()
 try:
   stream = open("config.yml", 'r')
 except IOError:
-  print "Error opening config file config.yml. Please create one from the example file."
+  print("Error opening config file config.yml. Please create one from the example file.")
   os.sys.exit(1)
 
 config = yaml.load(stream)
@@ -47,8 +47,13 @@ else:
 
 logger.addHandler(handler)
 
-# Functions
 
+state={}           # Keep track of states of sensors: state[gpio]=input
+# Main state table:
+# gpio, type, value, last_value, check_every, last_check, last_upload
+
+
+# Functions
 
 def getReading ():
   x,y,z = XLoBorg.ReadAccelerometer()
@@ -90,7 +95,7 @@ def append_message(messages, topic, payload, changed):
   changed=True
 
 
-def init_sensors():
+def init_sensors(state):
   '''
      Initialize sensor setups
   '''
@@ -123,13 +128,12 @@ def init_sensors():
       logger.error("Error: wrong type of sensor in config? <%s>" % type)
       os.sys.exit(1)
 
-   
-state={}           # Keep track of states of sensors: state[gpio]=input
-last_change={}     # When a certain sensor change was last sent: last_change[gpio]=time
+
+# Main
 
 init_sensors()
 
-# Main loop
+# Loop
 
 while True:
   messages=[]
