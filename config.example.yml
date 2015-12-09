@@ -5,14 +5,15 @@ mqtt:
   port: 1883
 delay:
   max_idle_time: 600 
+logfile: /tmp/rpisensors.log
 
 # s1, s2 are names never used. GPIO and type are important, see README.
 # PIR and Reed switches works in the same way.
 sensors:
-  s0:
-    gpio: -1    # Negative to not crash with actual GPIO sensors
-    type: dummy # Will fetch rpi cpu temp
-    delay: 2
+  sensor:
+    gpio: -1      # Negative to not crash with actual GPIO sensors
+    type: cputemp # Will fetch rpi cpu temp, just for testing
+    check_every: 2
   s1:
     gpio: 17
     type: ds18b20

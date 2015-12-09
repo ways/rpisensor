@@ -11,11 +11,11 @@ try:
   GPIO.setmode(GPIO.BCM)
 except ImportError as e:
   print "Error importing modules: %s. Please check README for requirements." % e
-  os.sys.exit(1)
+  #os.sys.exit(1)
 except RuntimeError as e:
   print "Error importing modules:", e
 
-sys_version=0.6
+sys_version=1.1
 
 #Hostname is used in topic
 hostname=socket.gethostname()
@@ -32,8 +32,7 @@ stream.close()
 
 mosquittoserver=config['mqtt']['broker']
 max_idle_time=config['delay']['max_idle_time']
-activity_delay=2
-delay=activity_delay
+loop_delay=2
 
 # Logging
 logger = logging.getLogger(__name__)
@@ -91,39 +90,44 @@ def append_message(messages, topic, payload, changed):
   changed=True
 
 
-# Initialize sensor setups
+def init_sensors():
+  '''
+     Initialize sensor setups
+  '''
 
-if 1 > len(config['sensors']):
-  error = 'No sensors configured!'
-  logger.error(error)
-  os.sys.exit(1)
-
-for sensor in config['sensors']:
-  if 'ds18b20' == config['sensors'][sensor]['type']:
-    logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
-    GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    from w1thermsensor import W1ThermSensor # w1 temp
-
-  elif 'xloborg' == config['sensors'][sensor]['type']:
-    logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
-    import XLoBorg
-    XLoBorg.printFunction = XLoBorg.NoPrint
-    XLoBorg.Init()
-
-  elif config['sensors'][sensor]['type'] in ['digital', 'pir', 'reed']:
-    logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
-    GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
-  
-  elif 'dummy' == config['sensors'][sensor]['type']:
-    pass
-
-  else:
-    logger.error("Error: wrong type of sensor in config? <%s>" % type)
+  if 1 > len(config['sensors']):
+    error = 'No sensors configured!'
+    logger.error(error)
     os.sys.exit(1)
+  
+  for sensor in config['sensors']:
+    if 'ds18b20' == config['sensors'][sensor]['type']:
+      logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
+      GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+      from w1thermsensor import W1ThermSensor # w1 temp
+  
+    elif 'xloborg' == config['sensors'][sensor]['type']:
+      logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
+      import XLoBorg
+      XLoBorg.printFunction = XLoBorg.NoPrint
+      XLoBorg.Init()
+  
+    elif config['sensors'][sensor]['type'] in ['digital', 'pir', 'reed']:
+      logger.info ("Initializing %s on gpio %s." % (config['sensors'][sensor]['type'], config['sensors'][sensor]['gpio']))
+      GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
+    
+    elif 'cputemp' == config['sensors'][sensor]['type']:
+      pass
+  
+    else:
+      logger.error("Error: wrong type of sensor in config? <%s>" % type)
+      os.sys.exit(1)
 
    
 state={}           # Keep track of states of sensors: state[gpio]=input
 last_change={}     # When a certain sensor change was last sent: last_change[gpio]=time
+
+init_sensors()
 
 # Main loop
 
@@ -223,7 +227,7 @@ while True:
       if ('xloborg' not in state) or (input != state['xloborg']):
         changed=True
 
-    elif 'dummy' == type:
+    elif 'cputemp' == type:
       logger.debug("Reading %s" % type)
       input=int(open('/sys/class/thermal/thermal_zone0/temp').read()) / 1e3
       #changed=True
@@ -267,4 +271,4 @@ while True:
     except Exception as err:
       logger.error("*** Error sending message *** %s." % err)
 
-  time.sleep(activity_delay)
+  time.sleep(loop_delay)
