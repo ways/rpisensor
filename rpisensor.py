@@ -50,8 +50,9 @@ logger.addHandler(handler)
 
 state={}           # Keep track of states of sensors: state[gpio]=input
 # Main state table:
-# gpio, type, value, last_value, check_every, last_check, last_upload
-
+# { gpio:
+#     [ type, value, last_value, check_every, last_check, last_upload ]
+# }
 
 # Functions
 
@@ -95,6 +96,11 @@ def append_message(messages, topic, payload, changed):
   changed=True
 
 
+def add_sensor(state, gpio, type, value, last_value, check_every, last_check, last_upload):
+  state[gpio] = [type, value, last_value, check_every, last_check, last_upload]
+  return True
+
+
 def init_sensors(state):
   '''
      Initialize sensor setups
@@ -122,16 +128,24 @@ def init_sensors(state):
       GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN)
     
     elif 'cputemp' == config['sensors'][sensor]['type']:
-      pass
+      logger.debug ("Adding sensor %s" % config['sensors'][sensor]['type'])
   
     else:
       logger.error("Error: wrong type of sensor in config? <%s>" % type)
       os.sys.exit(1)
 
+    add_sensor(state=state, \
+      gpio=config['sensors'][sensor]['gpio'], \
+      type=config['sensors'][sensor]['type'], \
+      value=None, \
+      last_value=None, \
+      check_every=config['sensors'][sensor]['check_every'], 
+      last_check=None, \
+      last_upload=None)
 
 # Main
 
-init_sensors()
+init_sensors(state)
 
 # Loop
 
