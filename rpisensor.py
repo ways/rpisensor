@@ -9,6 +9,7 @@ try:
     import logging                          # logging
     import RPi.GPIO as GPIO                 # gpio setup
     GPIO.setmode(GPIO.BCM)
+    from w1thermsensor import W1ThermSensor  # w1 temp
 except ImportError as e:
     print("Error importing modules: %s. Please check README for requirements." % e)
 except RuntimeError as e:
@@ -110,7 +111,6 @@ def init_sensors(state):
         if 'ds18b20' == config['sensors'][sensor]['type']:
             logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
             GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            from w1thermsensor import W1ThermSensor # w1 temp
 
         elif 'xloborg' == config['sensors'][sensor]['type']:
             logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
