@@ -85,11 +85,10 @@ def updateProduct ():
     return product
 
 
-def append_message(messages, topic, payload, changed):
-    messages.append({
+def append_message(msg, topic, payload, changed):
+    return msg + [{
         'topic': topic,
-        'payload': payload})
-    changed=True
+        'payload': payload}]
 
 
 def add_sensor(state, gpio, type, value, last_value, check_every, last_check, last_upload):
@@ -230,14 +229,14 @@ while True:
                     state[w1.id] = input
                     last_change[w1.id] = time.time()
                     changed=True
-                    append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
+                    messages = append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
 
             # Check if we should send anyway because prev value is older than max_idle_time
             elif (time.time()-last_change[w1.id] > max_idle_time):
                 state[w1.id] = input
                 last_change[w1.id] = time.time()
                 changed=True
-                append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
+                messages = append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
 
             # Do not send
             else:
@@ -276,6 +275,7 @@ while True:
 
         # Common for all sensors except ds18b20
         if 'ds18b20' != type:
+
             # Check if time since last check is above check_every for the sensor
             if (None == state[gpio][1] or (time.time()-int(state[gpio][4]) > state[gpio][3])):
                 state[gpio][2] = state[gpio][1] # Move value to last_value
@@ -283,28 +283,34 @@ while True:
                 state[gpio][1] = input
                 logger.debug("Sensor %s (%s): is now %s." % (state[gpio][0], gpio, state[gpio][1]))
 
-            if None != state[gpio][2]: # If we have at least two values (skip first reading), upload.
-                append_message(messages, hostname + '/' + type + str(gpio), input, changed)
+            # If we don't have at least two values, skip upload.
+            if None == state[gpio][2]:
+                logger.debug("Sensor %s (%s): skipping first value." % (state[gpio][0], gpio))
+                continue
 
-            # Check if above max_idle_time
-#            if (time.time()-last_change[gpio] > max_idle_time):
-#                logger.info("Max_idle_time hit for %s: %s" % (gpio, input))
-#                state[gpio] = input
-#                last_change[gpio] = time.time()
-#                append_message(messages, hostname + '/' + type + str(gpio), input, changed)
-#                continue
-
-            #else:
-            #  logger.debug("Not time to send %s yet. Delay: %s. Max idle: %s. Since last update of last_change[%s]: %.0f." \
-            #      % (input, delay, max_idle_time, gpio, (time.time()-last_change[gpio])))
+            # Check if empty values, above max_idle_time, value has changed.
+            if None == state[gpio][5] \
+                or (time.time()-state[gpio][5] > max_idle_time) \
+                or (state[gpio][1] != state[gpio][2]):
+                state[gpio][5] = time.time()    # Set last_upload to now
+                #logger.debug('Will upload.')
+                messages = append_message(messages, hostname + '/' + type + str(gpio), input, changed)
+            else:
+              logger.debug(
+                  'Sensor %s (%s): Skipping upload. Value: %s Prev: %s Last_upload: %s.' \
+                  % (state[gpio][0], gpio, state[gpio][1], state[gpio][2], state[gpio][5]))
   
     # Send all
     logger.debug(messages)
+    if 0 < len(messages):
 
-    try:
-        publish.multiple(messages, hostname=mosquitto_server, port=1883, client_id="", keepalive=60)
-        changed=False
-    except Exception as err:
-        logger.error("*** Error sending message *** %s." % err)
+        try:
+            publish.multiple(messages, hostname=mosquitto_server, port=1883, client_id="", keepalive=60)
+            changed=False
+        except Exception as err:
+            logger.error("*** Error sending message *** %s." % err)
+    else:
+        logger.debug('Nothing to upload.')
+        print (messages)
 
     time.sleep(loop_delay)
