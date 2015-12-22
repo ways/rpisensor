@@ -111,6 +111,16 @@ def init_sensors(state):
         if 'ds18b20' == config['sensors'][sensor]['type']:
             logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
             GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
+                add_sensor(state=state,
+                    gpio=str(config['sensors'][sensor]['gpio'])+ '-' + w1.id,
+                    type=config['sensors'][sensor]['type'],
+                    value=None,
+                    last_value=None,
+                    check_every=config['sensors'][sensor]['check_every'],
+                    last_check=None,
+                    last_upload=None)
+            continue
 
         elif 'xloborg' == config['sensors'][sensor]['type']:
             logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
@@ -148,9 +158,11 @@ state={}
 """
 # Keep track of states of sensors: state[gpio]=input
 # Main state table:
-# { gpio:
+# { gpio(id):
 #     [ type, value, last_value, check_every, last_check, last_upload ]
 # }
+
+on ds18b20 gpio is gpio + w1 id to allow several sensors
 """
 
 #Hostname is used in topic
@@ -173,7 +185,7 @@ while True:
     changed=False
 
     print (state)
-    print ("# { gpio: [ type, value, last_value, check_every, last_check, last_upload ]")
+    print ("# { gpio: [ type, value, last_value, check_every, last_check, last_upload ]}")
     for line in state:
       print (line)
 
@@ -183,7 +195,7 @@ while True:
         type=config['sensors'][sensor]['type']
         gpio=config['sensors'][sensor]['gpio']
         try:
-            delay=config['sensors'][sensor]['delay']
+            delay=config['sensors'][sensor]['check_every']
         except KeyError:
             delay=1
         try:
@@ -198,51 +210,34 @@ while True:
         if 'ds18b20' == type:
             logger.debug("Reading %s" % type)
             for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
-                # Make sure a new reading will be fetched
-                if w1.id not in last_change:
-                    last_change[w1.id]=time.time()-delay
+                gpioid = str(gpio) + '-' + w1.id
+                #try:
+                input = float("%.1f" % w1.get_temperature()) + offset  # Read from sensor
+                #except W1ThermSensorError:
+                #  logger.error("Unable to read %s sensor on gpio %." % (type, gpio))
+                #  logger.error("Sensor %s (%s): gave invalid data %s." % (w1.id, input))
+                #  continue
+                logger.debug("Sensor %s (%s): is now %s." % (state[gpioid][0], gpioid, state[gpioid][1]))
 
-            # Read from sensor
-            #try:
-            input = float("%.1f" % w1.get_temperature()) + offset
-            #except W1ThermSensorError:
-            #  logger.error("Unable to read %s sensor on gpio %." % (type, gpio))
-            #  continue
+                # Check if time since last check is above check_every for the sensor
+                if (None == state[gpioid][1] or (time.time()-int(state[gpioid][4]) > state[gpioid][3])):
+                    state[gpioid][2] = state[gpioid][1] # Move value to last_value
+                    state[gpioid][1] = input
+                    state[gpioid][4] = time.time()    # Set last_check to now
+                    logger.debug("Sensor %s (%s): is now %s." % (state[gpioid][0], gpioid, state[gpioid][1]))
 
-            if (input is None):
-                logger.error("Sensor %s gave invalid data %s." % (w1.id, input))
-                state[w1.id] = input
-                continue
+                # If we don't have at least two values, skip upload.
+                if None == state[gpioid][2]:
+                    logger.debug("Sensor %s (%s): skipping first value." % (state[gpioid][0], gpioid))
+                    continue
 
-            # Store, but don't send first reading
-            if (w1.id not in state):
-                state[w1.id] = input
-                continue
-
-            # Check if value is different from last reading
-            if (input != state[w1.id]):
-                changed=True
-                logger.debug ("Sensor %s changed from %s to %s." % (w1.id, state[w1.id], input))
-
-                # Check if we're allowed to send yet ( sensor/delay )
-                if changed and (time.time()-last_change[w1.id] > delay):
-                    state[w1.id] = input
-                    last_change[w1.id] = time.time()
-                    changed=True
-                    messages = append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
-
-            # Check if we should send anyway because prev value is older than max_idle_time
-            elif (time.time()-last_change[w1.id] > max_idle_time):
-                state[w1.id] = input
-                last_change[w1.id] = time.time()
-                changed=True
-                messages = append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
-
-            # Do not send
-            else:
-              logger.debug (
-                "(Not sending %s yet. Delay: %s. Max idle: %s. Since last update of last_change[%s]: %.0f.)"
-                % (input, delay, max_idle_time, w1.id, (time.time()-last_change[w1.id])))
+                # Check if empty values, above max_idle_time, value has changed.
+                if None == state[gpioid][5] \
+                    or (time.time()-state[gpioid][5] > max_idle_time) \
+                    or (state[gpioid][1] != state[gpioid][2]):
+                    state[gpioid][5] = time.time()    # Set last_upload to now
+                    #logger.debug('Will upload.')
+                    messages = append_message(messages, hostname + '/' + type + gpioid, input, changed)
 
         elif type in ['digital', 'pir', 'reed']:
             logger.debug("Reading %s" % type)
@@ -277,7 +272,9 @@ while True:
         if 'ds18b20' != type:
 
             # Check if time since last check is above check_every for the sensor
-            if (None == state[gpio][1] or (time.time()-int(state[gpio][4]) > state[gpio][3])):
+            if (None == state[gpio][1] or
+              None == state[gpio][2] or
+              (time.time()-int(state[gpio][4]) > state[gpio][3])):
                 state[gpio][2] = state[gpio][1] # Move value to last_value
                 state[gpio][4] = time.time()    # Set last_check to now
                 state[gpio][1] = input
@@ -301,8 +298,9 @@ while True:
                   % (state[gpio][0], gpio, state[gpio][1], state[gpio][2], state[gpio][5]))
   
     # Send all
-    logger.debug(messages)
     if 0 < len(messages):
+        logger.debug('Will upload:')
+        logger.debug(messages)
 
         try:
             publish.multiple(messages, hostname=mosquitto_server, port=1883, client_id="", keepalive=60)
@@ -311,6 +309,5 @@ while True:
             logger.error("*** Error sending message *** %s." % err)
     else:
         logger.debug('Nothing to upload.')
-        print (messages)
 
     time.sleep(loop_delay)
