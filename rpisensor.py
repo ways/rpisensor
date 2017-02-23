@@ -102,7 +102,7 @@ for sensor in config['sensors']:
   if 'ds18b20' == config['sensors'][sensor]['type']:
     logger.info ("Initializing %s with pullup." % config['sensors'][sensor]['type'])
     GPIO.setup(config['sensors'][sensor]['gpio'], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    from w1thermsensor import W1ThermSensor # w1 temp
+    import w1thermsensor # w1 temp
 
   elif 'xloborg' == config['sensors'][sensor]['type']:
     logger.info ("Initializing %s. Hope you've activated i2c." % config['sensors'][sensor]['type'])
@@ -151,17 +151,20 @@ while True:
 
     if 'ds18b20' == type:
       logger.debug("Reading %s" % type)
-      for count, w1 in enumerate(W1ThermSensor.get_available_sensors()):
+      for count, w1 in enumerate(w1thermsensor.W1ThermSensor.get_available_sensors()):
         # Make sure a new reading will be fetched
         if w1.id not in last_change:
           last_change[w1.id]=time.time()-delay
 
         # Read from sensor
-        #try:
-        input = float("%.1f" % w1.get_temperature()) + offset
-        #except W1ThermSensorError:
-        #  logger.error("Unable to read %s sensor on gpio %." % (type, gpio))
-        #  continue
+        try:
+          input = float("%.1f" % w1.get_temperature()) + offset
+        except ValueError:
+          logger.error("Unable to read %s sensor on gpio %." % (type, gpio))
+          continue
+        except w1thermsensor.core.SensorNotReadyError:
+          logger.error("Unable to read sensor on gpio.")
+          continue
 
         if (input is None):
           logger.error("Sensor %s gave invalid data %s." % (w1.id, input))
@@ -184,6 +187,7 @@ while True:
             last_change[w1.id] = time.time()
             changed=True
             append_message(messages, hostname + '/' + type + '_' + str(count), input, changed)
+            logger.debug ("Sending" + hostname + '/' + type + '_' + str(count))
 
         # Check if we should send anyway because prev value is older than max_idle_time
         elif (time.time()-last_change[w1.id] > max_idle_time):
@@ -258,13 +262,15 @@ while True:
       #      % (input, delay, max_idle_time, gpio, (time.time()-last_change[gpio])))
   
   # Send all
-  if changed:
+  if changed and 0 < len(messages):
     logger.debug(messages)
 
     try:
       publish.multiple(messages, hostname=mosquittoserver, port=1883, client_id="", keepalive=60)
-      changed=False
+      #changed=False
     except Exception as err:
       logger.error("*** Error sending message *** %s." % err)
+    finally:
+      changed=False
 
   time.sleep(activity_delay)

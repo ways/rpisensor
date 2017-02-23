@@ -1,3 +1,5 @@
+Do not use. Under development.
+
 # rpisensors to mqtt
 
 Read sensors connected to a Raspberry Pi (http://raspberrypi.org/), and publish the results via the Mosquito protocol (http://mosquitto.org/) with the least amount of config.
