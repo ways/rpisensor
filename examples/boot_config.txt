@@ -1,0 +1,3 @@
+# Set w1 gpio pin
+
+dtoverlay=w1-gpio,gpiopin=17

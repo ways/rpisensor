@@ -13,7 +13,14 @@ import paho.mqtt.publish as publish
  
 verbose = True 
 mosquittoserver='192.168.1.11' 
- 
+
+
+def getDose(cpm):
+    # https://github.com/radhoo/uradmonitor_kit1/blob/8928a7cf016745f7a456eeba948b0bd44821195b/code/geiger/detectors.cpp
+    GEIGER_TUBE_SBM20 = 0.006315
+    return GEIGER_TUBE_SBM20 * cpm
+
+
 source = sys.argv[1] 
 hostname=socket.gethostname() 
 messages=[] 
@@ -31,6 +38,7 @@ sensorcpm=jsondata['data']['cpm']
 sensortemperature=jsondata['data']['temperature'] 
  
 messages.append({'topic': hostname + '/uRADMonitor' + sensorid + '/cpm', 'payload': sensorcpm}) 
+messages.append({'topic': hostname + '/uRADMonitor' + sensorid + '/dose', 'payload': getDose(sensorcpm)}) 
 messages.append({'topic': hostname + '/uRADMonitor' + sensorid + '/temperature', 'payload': sensortemperature}) 
  
 if verbose: print ("Publishing: " + hostname + '/uRADMonitor' + sensorid + '/cpm') 
