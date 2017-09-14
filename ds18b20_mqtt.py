@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO                 # gpio setup
 GPIO.setmode(GPIO.BCM)
 import w1thermsensor
 
-# sudo pip install paho-mqtt
+# sudo pip3 install paho-mqtt
 
 mosquittoserver='192.168.1.11'
 mosquittoport=1883
