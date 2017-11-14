@@ -8,14 +8,14 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 sensors={
-# GPIO number: 'description|not connected value|connected value
-    17: 'test|false|true',    # Test pin (required)
-    27: 'water_1|false|true', # Water sensor 1
-    22: 'water_2|false|true'  # Water sensor 2
+# GPIO number: 'description'
+    17: 'test',    # Test pin (required)
+    27: 'water_1', # Water sensor 1
+    22: 'water_2'  # Water sensor 2
 # nn: 'water_n|...
 }
 
-verbose = True
+verbose = False
 run_test = True # Run test before read
 outputfile = sys.argv[1]
 
@@ -34,12 +34,10 @@ if run_test: # Run test of all sensors connected
         if verbose: print ("Setting up for test mode of pin ", pin)
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     
-        print ("Testing sensor on", pin)
+        if verbose: print ("Testing sensor on", pin)
         if GPIO.input(pin):
             reading=True
-            print ("Sensor on pin %s OK during test." % pin)
-        else:
-            print ("Sensor on pin %s failed test." % pin)
+            print ("%s-test: %s" % (sensors[pin], reading))
 
 # Sensor read
 for pinid, pin in enumerate(pins):
@@ -63,16 +61,11 @@ for pinid, pin in enumerate(pins):
             GPIO.setup(p, GPIO.OUT)
             GPIO.output(p, GPIO.LOW)
 
-    time.sleep(1)
-    print ("Reading sensor on", pin)
+#    time.sleep(1)
+    if verbose: print ("Reading sensor on", pin)
     if GPIO.input(pins[0]): # We really read the test pin here
         reading=True
-    print ("Sensor on pin %s is %s." % (pin, reading))
+    print ("%s: %s" % (sensors[pin], reading))
 
-#  description, iszero, isone = settings.split('|')
-#  if verbose:
-#    print "Pin %s which is %s: value %s (%s)." % (pin, description, value, iszero if 0 == value else isone)
-#  
-#  print(description + ': ' + (iszero if 0 == value else isone) )
-GPIO.cleanup()
+#GPIO.cleanup()
 
