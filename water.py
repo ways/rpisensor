@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 
-# DIY water detection sensor. See hardware setup at https://github.com/ways/rpisensor/
+# DIY water detection sensor with self test. See hardware setup at https://github.com/ways/rpisensor/
 
-import sys, time
+# Example output:
+# water_1-test: True
+# water_2-test: True
+# water_1: False
+# water_2: True
+
 import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
@@ -17,7 +22,6 @@ sensors={
 
 verbose = False
 run_test = True # Run test before read
-outputfile = sys.argv[1]
 
 pins=list(sensors.keys())
 
@@ -61,7 +65,6 @@ for pinid, pin in enumerate(pins):
             GPIO.setup(p, GPIO.OUT)
             GPIO.output(p, GPIO.LOW)
 
-#    time.sleep(1)
     if verbose: print ("Reading sensor on", pin)
     if GPIO.input(pins[0]): # We really read the test pin here
         reading=True
