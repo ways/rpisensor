@@ -56,16 +56,16 @@ for pinid, pin in enumerate(pins):
             continue
         if pin == p:
             if verbose: print ("Setting pin %s high" % p)
-            GPIO.setup(pin, GPIO.OUT)
-            GPIO.output(pin, GPIO.HIGH)
+            GPIO.setup(p, GPIO.OUT)
+            GPIO.output(p, GPIO.HIGH)
         else:
             if verbose: print ("Setting pin %s low" % p)
-            GPIO.setup(pin, GPIO.OUT)
-            GPIO.output(pin, GPIO.LOW)
+            GPIO.setup(p, GPIO.OUT)
+            GPIO.output(p, GPIO.LOW)
 
     time.sleep(1)
     print ("Reading sensor on", pin)
-    if GPIO.input(pin):
+    if GPIO.input(pins[0]): # We really read the test pin here
         reading=True
     print ("Sensor on pin %s is %s." % (pin, reading))
 
