@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# apt install python-w1thermsensor
+
 import os                               # os.sys.exit
 import RPi.GPIO as GPIO                 # gpio setup
 GPIO.setmode(GPIO.BCM)
